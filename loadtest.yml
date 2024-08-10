@@ -1,0 +1,38 @@
+config:
+  target: "https://wizard-world-api.herokuapp.com/"
+  phases:
+    - duration: 60
+      arrivalRate: 2
+      name: Load Test
+  payload:
+    path: "keywords.csv" 
+    fields:
+      - "keyword1"
+      - "keyword2"
+    order: sequence
+    loadAll: true  
+    name: "keywordsData"  
+  plugins:
+    ensure: {}
+  ensure:
+    thresholds:
+      - http.response_time.p95: 1000
+    conditions:
+      - expression: "stats.errors.count == 0"
+      - expression: "http.requests.rate >= 2"
+      - expression: "http.response_time.max < 600"
+scenarios:
+  - name: Pobieranie zasobu
+    flow:
+      - get:
+          url: "{{target}}Houses?param1={{ keywordsData.keyword1 }}"
+      - post:
+          url: "((target}}Feedback?param2={{ keywordsData.keyword2 }}"
+          json:
+            feedbackType: "General"
+            feedback: "string"
+            entityId: "0367baf3-1cb6-4baf-bede-48e17e1cd005"
+          capture:
+            - json: "$.json"
+              as: "request_body"
+      - log: "Json value from response is: {{ request_body }}"
